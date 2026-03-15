@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKYWYVERN 3D — Commission Sur Mesure</title>
+<script>
+function switchTab(id){
+  document.querySelectorAll('.ptab').forEach(function(b){ b.classList.remove('on'); });
+  document.querySelectorAll('.ptable').forEach(function(t){ t.classList.remove('on'); });
+  document.querySelectorAll('.ptab').forEach(function(b){
+    if(b.getAttribute('onclick') && b.getAttribute('onclick').indexOf("'"+id+"'") !== -1) b.classList.add('on');
+  });
+  var tbl = document.getElementById('tab-'+id);
+  if(tbl) tbl.classList.add('on');
+}
+
+var SIZES = {
+  figurine:[
+    {v:'fig:20-30',l:'20 – 30 cm',est:'249 – 349 €'},{v:'fig:30-40',l:'30 – 40 cm',est:'349 – 499 €'},
+    {v:'fig:40-50',l:'40 – 50 cm',est:'499 – 699 €'},{v:'fig:50-60',l:'50 – 60 cm',est:'699 – 999 €'},
+    {v:'fig:60-80',l:'60 – 80 cm',est:'999 – 1 499 €'},{v:'fig:80-100',l:'80 – 100 cm',est:'1 499 – 2 499 €'}
+  ],
+  buste:[
+    {v:'buste:20-30',l:'20 – 30 cm',est:'225 – 315 €'},{v:'buste:30-40',l:'30 – 40 cm',est:'315 – 450 €'},
+    {v:'buste:40-50',l:'40 – 50 cm',est:'450 – 630 €'},{v:'buste:50-60',l:'50 – 60 cm',est:'630 – 900 €'},
+    {v:'buste:60-80',l:'60 – 80 cm',est:'900 – 1 350 €'},{v:'buste:80-100',l:'80 – 100 cm',est:'1 350 – 2 250 €'}
+  ],
+  diorama:[
+    {v:'dio:50-60',l:'50 – 60 cm',est:'800 – 1 150 €'},
+    {v:'dio:60-80',l:'60 – 80 cm',est:'1 150 – 1 725 €'},
+    {v:'dio:80-100',l:'80 – 100 cm',est:'1 725 – 2 875 €'}
+  ],
+  carte:[
+    {v:'carte:16',l:'16 cm',est:'60 €'},{v:'carte:20',l:'20 cm',est:'79 €'},
+    {v:'carte:25',l:'25 cm',est:'105 €'},{v:'carte:30',l:'30 cm',est:'139 €'},
+    {v:'carte:35',l:'35 cm',est:'179 €'},{v:'carte:40',l:'40 cm',est:'229 €'}
+  ],
+  cadre:[
+    {v:'cadre:20x30',l:'20 × 30 cm',est:'129 €'},{v:'cadre:30x40',l:'30 × 40 cm',est:'179 €'},
+    {v:'cadre:40x50',l:'40 × 50 cm',est:'249 €'},{v:'cadre:50x60',l:'50 × 60 cm',est:'329 €'},
+    {v:'cadre:60x80',l:'60 × 80 cm',est:'449 €'}
+  ],
+  autre:[]
+};
+
+var PROD_TAB = {figurine:'fig',buste:'buste',diorama:'dio',carte:'carte',cadre:'cadre'};
+
+var PRIX = {
+  'fig:20-30':{lo:249,hi:349},'fig:30-40':{lo:349,hi:499},'fig:40-50':{lo:499,hi:699},
+  'fig:50-60':{lo:699,hi:999},'fig:60-80':{lo:999,hi:1499},'fig:80-100':{lo:1499,hi:2499},
+  'buste:20-30':{lo:225,hi:315},'buste:30-40':{lo:315,hi:450},'buste:40-50':{lo:450,hi:630},
+  'buste:50-60':{lo:630,hi:900},'buste:60-80':{lo:900,hi:1350},'buste:80-100':{lo:1350,hi:2250},
+  'dio:50-60':{lo:800,hi:1150},'dio:60-80':{lo:1150,hi:1725},'dio:80-100':{lo:1725,hi:2875},
+  'carte:16':60,'carte:20':79,'carte:25':105,'carte:30':139,'carte:35':179,'carte:40':229,
+  'cadre:20x30':129,'cadre:30x40':179,'cadre:40x50':249,'cadre:50x60':329,'cadre:60x80':449
+};
+
+var lastEst = '---';
+
+function onProdChange(){
+  var prod = document.getElementById('fProd').value;
+  var hint = document.getElementById('sizeHint');
+  var wrap = document.getElementById('sizeWrap');
+  var sel  = document.getElementById('fSize');
+  sel.innerHTML = '<option value="" disabled selected>-- Sélectionner une taille --</option>';
+  document.getElementById('eAmt').textContent = '---';
+  lastEst = '---';
+  if(!prod || prod === 'autre'){
+    hint.style.display = 'block';
+    wrap.classList.remove('show');
+    hint.textContent = prod === 'autre' ? 'Décris ton projet dans la description ci-dessous.' : 'Sélectionne d\'abord un type de produit ci-dessus';
+    return;
+  }
+  hint.style.display = 'none';
+  wrap.classList.add('show');
+  (SIZES[prod] || []).forEach(function(s){
+    var opt = document.createElement('option');
+    opt.value = s.v;
+    opt.textContent = s.l + '  ·  est. ' + s.est;
+    sel.appendChild(opt);
+  });
+  var custom = document.createElement('option');
+  custom.value = 'custom';
+  custom.textContent = 'Je ne sais pas encore';
+  sel.appendChild(custom);
+  var tabId = PROD_TAB[prod];
+  if(tabId) switchTab(tabId);
+}
+
+function calcEst(){
+  var sz = document.getElementById('fSize').value;
+  var str = '---';
+  if(!sz || sz === 'custom'){
+    str = 'Sur devis';
+  } else {
+    var p = PRIX[sz];
+    if(p && typeof p === 'object') str = p.lo + ' – ' + p.hi + ' €';
+    else if(p) str = p + ' €';
+  }
+  lastEst = str;
+  var el = document.getElementById('eAmt');
+  el.textContent = str;
+  el.classList.remove('pop');
+  void el.offsetWidth;
+  el.classList.add('pop');
+}
+
+function resetForm(){
+  document.getElementById('eAmt').textContent = '---';
+  lastEst = '---';
+  var hint = document.getElementById('sizeHint');
+  hint.style.display = 'block';
+  hint.textContent = 'Sélectionne d\'abord un type de produit ci-dessus';
+  document.getElementById('sizeWrap').classList.remove('show');
+  document.getElementById('fSize').innerHTML = '<option value="" disabled selected>-- Sélectionner une taille --</option>';
+}
+
+function toggleAge(){
+  document.getElementById('ageW').classList.toggle('show', document.getElementById('hCheck').checked);
+}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --black:#08080b;--dark:#0f0f14;--panel:#141419;--panel2:#1a1a22;
+  --yellow:#f5d800;--blue:#1ab3ff;--white:#f0f0f2;--gray:#8a8a9a;--gray2:#3a3a4a;
+  --red:#ff3b3b;
+  --bd:3px solid #000;--bd2:2px solid #000;
+  --sh:4px 4px 0 #000;--sh2:6px 6px 0 #000;--sh3:8px 8px 0 #000;
+}
+*{margin:0;padding:0;box-sizing:border-box;cursor:default;}
+html{scroll-behavior:smooth;}
+body{background:var(--black);color:var(--white);font-family:'Barlow',sans-serif;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.05) 3px,rgba(0,0,0,.05) 4px);pointer-events:none;z-index:900;}
+body::after{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(245,216,0,.022) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+a,button,.ptab,.tier,label,.ci,input[type=checkbox],select{cursor:pointer;}
+input[type=text],input[type=email],textarea{cursor:text;}
+#spb{position:fixed;top:0;left:0;height:4px;background:var(--yellow);box-shadow:0 0 10px rgba(245,216,0,.5);z-index:9998;width:0%;}
+nav{position:fixed;top:0;left:0;right:0;z-index:500;background:rgba(8,8,11,.97);border-bottom:4px solid var(--yellow);box-shadow:0 4px 0 #000;display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:68px;backdrop-filter:blur(12px);}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.85rem;letter-spacing:5px;text-decoration:none;display:flex;align-items:baseline;}
+.logo .ls{color:var(--yellow);text-shadow:3px 3px 0 #000;}
+.logo .lw{color:var(--white);text-shadow:3px 3px 0 #000;}
+.logo .l3{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:.66rem;letter-spacing:2px;background:var(--blue);color:#000;padding:2px 7px;border:var(--bd2);margin-left:7px;box-shadow:2px 2px 0 #000;align-self:center;}
+.nav-r{display:flex;align-items:center;gap:10px;}
+.nav-mail{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.72rem;color:var(--gray);text-decoration:none;}
+.nav-mail:hover{color:var(--yellow);}
+.nav-ig{display:inline-flex;align-items:center;gap:7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:#000;background:var(--yellow);padding:7px 16px;border:var(--bd2);box-shadow:3px 3px 0 #000;text-decoration:none;transition:all .12s;margin-left:6px;}
+.nav-ig:hover{transform:translate(-2px,-2px);box-shadow:var(--sh2);background:var(--blue);}
+.phead{padding:100px 48px 44px;background:var(--dark);border-bottom:4px solid #000;position:relative;overflow:hidden;}
+.phead::after{content:'COMMISSION';position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-family:'Bebas Neue',sans-serif;font-size:12rem;letter-spacing:8px;color:rgba(245,216,0,.022);pointer-events:none;white-space:nowrap;}
+.phead-inner{max-width:1100px;margin:0 auto;position:relative;z-index:1;}
+.phead-inner .k{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.68rem;letter-spacing:5px;text-transform:uppercase;color:var(--blue);display:block;margin-bottom:10px;}
+.phead-inner h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.8rem,7vw,5.5rem);letter-spacing:5px;line-height:.9;}
+.phead-inner h1 .t1{color:var(--yellow);text-shadow:5px 5px 0 #000,-2px -2px 0 #000;}
+.phead-inner h1 .t2{color:var(--white);text-shadow:4px 4px 0 #000;}
+.phead-inner .sub{font-family:'Barlow Condensed',sans-serif;font-size:.95rem;letter-spacing:2px;color:var(--gray);margin-top:14px;}
+.divs{height:6px;background:repeating-linear-gradient(90deg,var(--yellow) 0,var(--yellow) 26px,#000 26px,#000 32px,var(--blue) 32px,var(--blue) 58px,#000 58px,#000 64px);border-top:2px solid #000;border-bottom:2px solid #000;position:relative;z-index:1;}
+#main{background:var(--black);padding:52px 0 80px;position:relative;z-index:1;}
+.wrap{max-width:1200px;margin:0 auto;padding:0 48px;display:grid;grid-template-columns:380px 1fr;gap:40px;align-items:start;}
+.ptabs{display:flex;border:var(--bd);box-shadow:var(--sh2);overflow-x:auto;}
+.ptab{flex:1;min-width:max-content;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.62rem;letter-spacing:1px;text-transform:uppercase;padding:9px 10px;background:var(--panel2);color:var(--gray);border:none;cursor:pointer;transition:all .12s;text-align:center;border-right:2px solid #000;white-space:nowrap;}
+.ptab:last-child{border-right:0;}
+.ptab:hover{color:var(--yellow);}
+.ptab.on{background:var(--yellow);color:#000;}
+.price-tables{background:var(--panel);border:var(--bd);border-top:0;box-shadow:var(--sh2);margin-bottom:20px;}
+.ptable{display:none;}
+.ptable.on{display:block;}
+.pth{background:var(--panel2);border-bottom:var(--bd);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;}
+.pth-title{font-family:'Bebas Neue',sans-serif;font-size:1.15rem;letter-spacing:3px;color:var(--yellow);}
+.pth-note{font-family:'Barlow Condensed',sans-serif;font-size:.6rem;letter-spacing:1px;color:var(--gray2);text-transform:uppercase;}
+.tier{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;border-bottom:1px solid rgba(255,255,255,.04);transition:background .1s;}
+.tier:last-child{border-bottom:0;}
+.tier:hover{background:rgba(245,216,0,.04);}
+.tier.base{background:rgba(245,216,0,.05);}
+.tl .ts{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;letter-spacing:1px;color:var(--white);}
+.tl .tn{font-family:'Barlow Condensed',sans-serif;font-size:.63rem;color:var(--gray);margin-top:1px;}
+.tr{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:2px;color:var(--yellow);text-align:right;flex-shrink:0;}
+.tr small{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;color:var(--gray2);display:block;margin-top:1px;}
+.icard{background:var(--panel);border:var(--bd);box-shadow:var(--sh);overflow:hidden;margin-bottom:16px;}
+.icard-h{padding:11px 18px;border-bottom:var(--bd);}
+.icard-h.b{background:var(--blue);}
+.icard-h.d{background:var(--panel2);}
+.icard-h h4{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:3px;color:#000;}
+.icard-h.d h4{color:var(--yellow);}
+.icard-body{padding:14px 18px;}
+.ii{display:flex;gap:9px;align-items:flex-start;margin-bottom:9px;font-family:'Barlow Condensed',sans-serif;font-size:.8rem;color:var(--gray);line-height:1.5;}
+.ii:last-child{margin-bottom:0;}
+.ii::before{content:'▸';color:var(--yellow);flex-shrink:0;margin-top:1px;}
+.ii strong{color:var(--white);}
+.ii a{color:var(--blue);text-decoration:none;}
+.ii a:hover{color:var(--yellow);}
+.estbar{background:var(--panel2);border:var(--bd);border-bottom:0;box-shadow:var(--sh2);padding:18px 26px 16px 32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;position:relative;overflow:hidden;}
+.estbar::before{content:'';position:absolute;top:0;left:0;width:6px;height:100%;background:var(--yellow);border-right:3px solid #000;}
+.est-left .el{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.66rem;letter-spacing:4px;text-transform:uppercase;color:var(--gray);}
+.est-left .es{font-family:'Barlow Condensed',sans-serif;font-size:.63rem;color:var(--gray2);margin-top:3px;}
+.eamt{font-family:'Bebas Neue',sans-serif;font-size:2.8rem;letter-spacing:3px;color:var(--yellow);text-shadow:3px 3px 0 #000;line-height:1;min-width:140px;text-align:right;}
+.eamt.pop{animation:epop .28s ease;}
+@keyframes epop{0%{transform:scale(1);}50%{transform:scale(1.1);}100%{transform:scale(1);}}
+.eunit{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;color:var(--gray);margin-top:2px;text-align:right;}
+.ewarn{width:100%;border-top:1px solid rgba(255,255,255,.05);padding-top:11px;margin-top:6px;font-family:'Barlow Condensed',sans-serif;font-size:.67rem;color:var(--gray2);line-height:1.55;padding-left:6px;}
+.ewarn strong{color:var(--blue);}
+.fbox{background:var(--panel);border:var(--bd);box-shadow:var(--sh2);overflow:hidden;}
+.fbox-top{background:var(--yellow);border-bottom:var(--bd);padding:13px 26px;display:flex;align-items:center;justify-content:space-between;}
+.fbox-title{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:3px;color:#000;display:flex;align-items:center;gap:9px;}
+.fbox-title .ftag{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:700;letter-spacing:2px;background:#000;color:var(--yellow);padding:2px 8px;}
+.fdots{display:flex;gap:5px;}
+.fdot{width:12px;height:12px;border:2px solid #000;}
+.fdot:nth-child(1){background:#000;}
+.fdot:nth-child(2){background:var(--blue);}
+.fdot:nth-child(3){background:transparent;}
+.cform{padding:26px;display:flex;flex-direction:column;gap:20px;}
+.fsec{border:2px solid rgba(255,255,255,.05);padding:18px;background:rgba(0,0,0,.15);position:relative;}
+.fsec::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--yellow);}
+.fsec-t{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:.66rem;letter-spacing:4px;text-transform:uppercase;color:var(--yellow);margin-bottom:14px;padding-left:10px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.fg.full{grid-column:1/-1;}
+.fg label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.64rem;letter-spacing:3px;text-transform:uppercase;color:var(--gray);}
+.fg label .req{color:var(--blue);}
+.fg input,.fg select,.fg textarea{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.09);color:var(--white);padding:10px 13px;font-family:'Barlow',sans-serif;font-size:.88rem;outline:none;transition:border-color .12s;appearance:none;-webkit-appearance:none;width:100%;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--yellow);box-shadow:0 0 0 2px rgba(245,216,0,.09);}
+.fg input::placeholder,.fg textarea::placeholder{color:rgba(255,255,255,.16);}
+.fg select option{background:var(--dark);color:var(--white);}
+.fg textarea{resize:vertical;min-height:96px;line-height:1.6;}
+#sizeWrap{display:none;}
+#sizeWrap.show{display:block;}
+.size-hint{font-family:'Barlow Condensed',sans-serif;font-size:.76rem;color:var(--gray2);padding:12px 14px;border:2px dashed var(--gray2);text-align:center;}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;}
+.ci{display:flex;align-items:center;gap:8px;padding:3px 0;}
+.ci input[type=checkbox]{width:15px;height:15px;min-width:15px;border:2px solid rgba(255,255,255,.2);background:rgba(0,0,0,.4);appearance:none;-webkit-appearance:none;position:relative;flex-shrink:0;}
+.ci input[type=checkbox]:checked{background:var(--yellow);border-color:#000;}
+.ci input[type=checkbox]:checked::after{content:'✔';position:absolute;top:-3px;left:0;color:#000;font-size:.7rem;font-weight:900;}
+.ci label{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.78rem;color:var(--white);}
+.awarn{background:rgba(255,59,59,.07);border:2px solid var(--red);padding:11px 14px;display:none;gap:8px;align-items:flex-start;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;color:rgba(255,140,140,.9);line-height:1.5;margin-top:9px;}
+.awarn.show{display:flex;}
+.awarn strong{color:var(--red);}
+.fpol{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;color:var(--gray2);line-height:1.6;margin-bottom:16px;border-left:3px solid rgba(26,179,255,.25);padding-left:13px;}
+.fpol strong{color:var(--gray);}
+.facts{display:flex;gap:11px;flex-wrap:wrap;align-items:center;}
+.btn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.88rem;letter-spacing:3px;text-transform:uppercase;padding:13px 30px;text-decoration:none;border:var(--bd);display:inline-flex;align-items:center;gap:7px;transition:all .12s;cursor:pointer;}
+.btn-y{background:var(--yellow);color:#000;box-shadow:var(--sh2);}
+.btn-y:hover{transform:translate(-2px,-2px);box-shadow:var(--sh3);}
+.btn-b{background:var(--blue);color:#000;box-shadow:var(--sh2);}
+.btn-b:hover{transform:translate(-2px,-2px);box-shadow:var(--sh3);}
+.btn-o{background:transparent;color:var(--white);border-color:var(--gray2);box-shadow:var(--sh);}
+.btn-o:hover{background:var(--white);color:#000;border-color:#000;transform:translate(-2px,-2px);}
+.btn:disabled{opacity:.45;pointer-events:none;}
+.smsg{font-family:'Barlow Condensed',sans-serif;font-size:.76rem;color:var(--gray);display:none;}
+.smsg.show{display:block;}
+
+/* ══ POPUP ══ */
+.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;}
+.popup-overlay.show{display:flex;}
+.popup{background:var(--panel);border:var(--bd);box-shadow:0 0 0 4px #000,8px 8px 0 #000;max-width:540px;width:100%;animation:popIn .22s ease;}
+@keyframes popIn{from{transform:scale(.9);opacity:0;}to{transform:scale(1);opacity:1;}}
+.popup-top{background:var(--yellow);border-bottom:var(--bd);padding:15px 22px;display:flex;align-items:center;justify-content:space-between;}
+.popup-top-title{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:3px;color:#000;}
+.popup-close{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:#000;background:none;border:none;cursor:pointer;line-height:1;padding:0;}
+.popup-close:hover{opacity:.6;}
+.popup-body{padding:26px 24px;}
+.popup-icon{font-size:2.6rem;display:block;text-align:center;margin-bottom:12px;}
+.popup-msg{font-family:'Barlow Condensed',sans-serif;font-size:.92rem;color:var(--gray);line-height:1.7;text-align:center;margin-bottom:20px;}
+.popup-msg strong{color:var(--white);}
+.popup-est{background:var(--panel2);border:2px solid var(--yellow);padding:14px 20px;text-align:center;margin-bottom:20px;box-shadow:var(--sh);}
+.pe-label{font-family:'Barlow Condensed',sans-serif;font-size:.62rem;letter-spacing:4px;text-transform:uppercase;color:var(--gray);margin-bottom:4px;}
+.pe-val{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;letter-spacing:3px;color:var(--yellow);text-shadow:2px 2px 0 #000;}
+.pe-warn{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;color:var(--gray2);margin-top:5px;line-height:1.5;}
+.popup-steps{background:rgba(26,179,255,.06);border:2px solid rgba(26,179,255,.25);padding:14px 18px;margin-bottom:20px;}
+.popup-steps-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.68rem;letter-spacing:3px;text-transform:uppercase;color:var(--blue);margin-bottom:8px;}
+.popup-steps ol{padding-left:18px;}
+.popup-steps ol li{font-family:'Barlow Condensed',sans-serif;font-size:.84rem;color:var(--gray);line-height:1.75;}
+.popup-steps ol li strong{color:var(--white);}
+.popup-btns{display:flex;gap:10px;flex-wrap:wrap;}
+.popup-btns .btn{flex:1;justify-content:center;font-size:.8rem;padding:12px 14px;}
+
+footer{background:var(--panel);border-top:4px solid var(--yellow);box-shadow:0 -4px 0 #000;padding:36px 48px 24px;position:relative;z-index:1;}
+.ft{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;}
+.ft-logo{font-family:'Bebas Neue',sans-serif;font-size:1.7rem;letter-spacing:5px;}
+.ft-logo .fy{color:var(--yellow);text-shadow:2px 2px 0 #000;}
+.ft-logo .fw{color:var(--white);text-shadow:2px 2px 0 #000;}
+.ft-logo .fb{color:var(--blue);text-shadow:2px 2px 0 #000;}
+.ft-mid{text-align:center;}
+.ft-mid .tag{font-family:'Barlow Condensed',sans-serif;font-size:.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--gray2);}
+.ft-mid .mail a{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.84rem;color:var(--blue);text-decoration:none;display:block;margin-top:4px;}
+.ft-mid .mail a:hover{color:var(--yellow);}
+.ft-copy{font-size:.68rem;color:var(--gray2);text-align:right;}
+@media(max-width:920px){.wrap{grid-template-columns:1fr;padding:0 24px;}}
+@media(max-width:600px){nav{padding:0 16px;}.nav-mail{display:none;}.phead{padding:88px 20px 36px;}.fr{grid-template-columns:1fr;}.cgrid{grid-template-columns:1fr;}footer{padding:28px 20px 18px;}.ft{flex-direction:column;align-items:flex-start;}}
+</style>
+</head>
+<body>
+<div id="spb"></div>
+
+<!-- POPUP -->
+<div class="popup-overlay" id="popup" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="popup">
+    <div class="popup-top">
+      <div class="popup-top-title">Demande Envoyée !</div>
+      <button class="popup-close" onclick="document.getElementById('popup').classList.remove('show')">✕</button>
+    </div>
+    <div class="popup-body">
+      <span class="popup-icon">⚡</span>
+      <p class="popup-msg">Ta demande a été transmise à <strong>SKYWYVERN 3D</strong>.<br>Envoie aussi un mail directement pour garantir la réception :</p>
+      <div class="popup-est">
+        <div class="pe-label">Estimation temporaire</div>
+        <div class="pe-val" id="popEst">---</div>
+        <div class="pe-warn">Indicatif uniquement — le devis définitif sera établi sous 48–72h après analyse de ton projet</div>
+      </div>
+      <div class="popup-steps">
+        <div class="popup-steps-title">Comment envoyer ton mail</div>
+        <ol>
+          <li>Clique <strong>"Ouvrir dans ma messagerie"</strong> ci-dessous</li>
+          <li>Ton client mail s'ouvre avec le récapitulatif <strong>déjà rempli</strong></li>
+          <li>Vérifie et <strong>envoie</strong></li>
+        </ol>
+      </div>
+      <div class="popup-btns">
+        <a class="btn btn-y" id="mailtoBtn" href="#">Ouvrir dans ma messagerie</a>
+        <button class="btn btn-o" onclick="document.getElementById('popup').classList.remove('show')">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo"><span class="ls">SKY</span><span class="lw">WYVERN</span><span class="l3">3D</span></a>
+  <div class="nav-r">
+    <a href="mailto:kutkuproduction@gmail.com" class="nav-mail">kutkuproduction@gmail.com</a>
+    <a href="https://www.instagram.com/skywyvern3d/" target="_blank" rel="noopener" class="nav-ig">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="2.5"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2.5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/></svg>
+      Commandes Passées
+    </a>
+  </div>
+</nav>
+
+<div class="phead">
+  <div class="phead-inner">
+    <span class="k">// Commande sur mesure · Devis gratuit</span>
+    <h1><span class="t1">COMMANDE</span><br><span class="t2">PERSONNALISÉE</span></h1>
+    <p class="sub">Remplis le formulaire · Devis définitif sous 48–72h · Toutes tailles · Tous univers</p>
+  </div>
+</div>
+
+<div class="divs"></div>
+
+<section id="main">
+  <div class="wrap">
+
+    <div>
+      <div class="ptabs">
+        <button class="ptab on" onclick="switchTab('fig')">Figurines</button>
+        <button class="ptab" onclick="switchTab('buste')">Bustes</button>
+        <button class="ptab" onclick="switchTab('dio')">Dioramas</button>
+        <button class="ptab" onclick="switchTab('carte')">Cartes 3D</button>
+        <button class="ptab" onclick="switchTab('cadre')">Cadres 3D</button>
+      </div>
+      <div class="price-tables">
+        <div class="ptable on" id="tab-fig">
+          <div class="pth"><span class="pth-title">Figurines</span><span class="pth-note">Toutes thématiques</span></div>
+          <div class="tier base"><div class="tl"><div class="ts">20 – 30 cm</div><div class="tn">Mini · Standard</div></div><div class="tr">249 – 349 €<small>Base</small></div></div>
+          <div class="tier"><div class="tl"><div class="ts">30 – 40 cm</div><div class="tn">Moyen format</div></div><div class="tr">349 – 499 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">40 – 50 cm</div><div class="tn">Grand standard</div></div><div class="tr">499 – 699 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">50 – 60 cm</div><div class="tn">Grand format</div></div><div class="tr">699 – 999 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">60 – 80 cm</div><div class="tn">Très grand</div></div><div class="tr">999 – 1 499 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">80 – 100 cm</div><div class="tn">Colossal</div></div><div class="tr">1 499 – 2 499 €</div></div>
+          <div class="pth" style="border-top:var(--bd);border-bottom:0;"><span class="pth-note">Manga · Hentai · Pop Culture · Fantasy — même grille</span></div>
+        </div>
+        <div class="ptable" id="tab-buste">
+          <div class="pth"><span class="pth-title">Bustes</span><span class="pth-note">-10% vs figurine</span></div>
+          <div class="tier base"><div class="tl"><div class="ts">20 – 30 cm</div><div class="tn">Mini · Standard</div></div><div class="tr">225 – 315 €<small>Base</small></div></div>
+          <div class="tier"><div class="tl"><div class="ts">30 – 40 cm</div><div class="tn">Moyen format</div></div><div class="tr">315 – 450 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">40 – 50 cm</div><div class="tn">Grand standard</div></div><div class="tr">450 – 630 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">50 – 60 cm</div><div class="tn">Grand format</div></div><div class="tr">630 – 900 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">60 – 80 cm</div><div class="tn">Très grand</div></div><div class="tr">900 – 1 350 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">80 – 100 cm</div><div class="tn">Colossal</div></div><div class="tr">1 350 – 2 250 €</div></div>
+          <div class="pth" style="border-top:var(--bd);border-bottom:0;"><span class="pth-note">Portrait · Dark Art · Fantasy · Manga</span></div>
+        </div>
+        <div class="ptable" id="tab-dio">
+          <div class="pth"><span class="pth-title">Dioramas</span><span class="pth-note">+15% vs figurine</span></div>
+          <div class="tier base"><div class="tl"><div class="ts">50 – 60 cm</div><div class="tn">Scène standard</div></div><div class="tr">800 – 1 150 €<small>Base</small></div></div>
+          <div class="tier"><div class="tl"><div class="ts">60 – 80 cm</div><div class="tn">Grand format</div></div><div class="tr">1 150 – 1 725 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">80 – 100 cm</div><div class="tn">Colossal</div></div><div class="tr">1 725 – 2 875 €</div></div>
+          <div class="pth" style="border-top:var(--bd);border-bottom:0;"><span class="pth-note">Taille minimum 50 cm · Multi-personnages · Décors</span></div>
+        </div>
+        <div class="ptable" id="tab-carte">
+          <div class="pth"><span class="pth-title">Cartes 3D en Relief</span><span class="pth-note">Petit format</span></div>
+          <div class="tier base"><div class="tl"><div class="ts">16 cm</div><div class="tn">Mini · Cadeau</div></div><div class="tr">60 €<small>Base</small></div></div>
+          <div class="tier"><div class="tl"><div class="ts">20 cm</div><div class="tn">Standard</div></div><div class="tr">79 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">25 cm</div><div class="tn">Moyen</div></div><div class="tr">105 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">30 cm</div><div class="tn">Grand</div></div><div class="tr">139 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">35 cm</div><div class="tn">Très grand</div></div><div class="tr">179 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">40 cm</div><div class="tn">XXL</div></div><div class="tr">229 €</div></div>
+          <div class="pth" style="border-top:var(--bd);border-bottom:0;"><span class="pth-note">Impression FDM · brut ou peint</span></div>
+        </div>
+        <div class="ptable" id="tab-cadre">
+          <div class="pth"><span class="pth-title">Cadres 3D Décoratifs</span><span class="pth-note">Intermédiaire</span></div>
+          <div class="tier base"><div class="tl"><div class="ts">20 × 30 cm</div><div class="tn">Format mini</div></div><div class="tr">129 €<small>Base</small></div></div>
+          <div class="tier"><div class="tl"><div class="ts">30 × 40 cm</div><div class="tn">Standard</div></div><div class="tr">179 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">40 × 50 cm</div><div class="tn">Grand format</div></div><div class="tr">249 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">50 × 60 cm</div><div class="tn">Très grand</div></div><div class="tr">329 €</div></div>
+          <div class="tier"><div class="tl"><div class="ts">60 × 80 cm</div><div class="tn">XXL</div></div><div class="tr">449 €</div></div>
+          <div class="pth" style="border-top:var(--bd);border-bottom:0;"><span class="pth-note">Résine ou FDM · éléments en relief inclus</span></div>
+        </div>
+      </div>
+
+      <div class="icard">
+        <div class="icard-h b"><h4>Infos Pratiques</h4></div>
+        <div class="icard-body">
+          <div class="ii">Réponse sous <strong>48 à 72h</strong> après réception.</div>
+          <div class="ii">Suivi de fabrication par <strong>photos mail</strong>.</div>
+          <div class="ii">Contenus <strong>18+</strong> acceptés — majeurs uniquement.</div>
+          <div class="ii">Contact : <a href="mailto:kutkuproduction@gmail.com"><strong>kutkuproduction@gmail.com</strong></a></div>
+        </div>
+      </div>
+      <div class="icard">
+        <div class="icard-h d"><h4>Tarifs indicatifs</h4></div>
+        <div class="icard-body">
+          <div class="ii">Les prix varient selon la <strong>complexité du modèle</strong>. Le devis définitif est établi après analyse de ton projet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORM -->
+    <div>
+      <div class="estbar">
+        <div class="est-left">
+          <div class="el">Estimation automatique</div>
+          <div class="es">Sélectionne un produit et une taille</div>
+        </div>
+        <div>
+          <div class="eamt" id="eAmt">---</div>
+          <div class="eunit">estimation indicative</div>
+        </div>
+        <div class="ewarn"><strong>Temporaire et indicative.</strong> Le devis définitif sera fourni sous 48–72h.</div>
+      </div>
+
+      <div class="fbox">
+        <div class="fbox-top">
+          <div class="fbox-title">Formulaire de Devis <span class="ftag">GRATUIT</span></div>
+          <div class="fdots"><div class="fdot"></div><div class="fdot"></div><div class="fdot"></div></div>
+        </div>
+        <form class="cform" id="cform" onsubmit="doSubmit(event)">
+
+          <div class="fsec">
+            <div class="fsec-t">01 — Tes Coordonnées</div>
+            <div class="fr">
+              <div class="fg"><label>Prénom ou Pseudo <span class="req">*</span></label><input type="text" id="fName" placeholder="Ton prénom ou pseudo" required></div>
+              <div class="fg"><label>Email <span class="req">*</span></label><input type="email" id="fEmail" placeholder="ton@email.com" required></div>
+            </div>
+          </div>
+
+          <div class="fsec">
+            <div class="fsec-t">02 — Type de Produit</div>
+            <div class="fr">
+              <div class="fg"><label>Produit <span class="req">*</span></label>
+                <select id="fProd" onchange="onProdChange()" required>
+                  <option value="" disabled selected>-- Sélectionner --</option>
+                  <option value="figurine">Figurine</option>
+                  <option value="buste">Buste</option>
+                  <option value="diorama">Diorama</option>
+                  <option value="carte">Carte 3D</option>
+                  <option value="cadre">Cadre 3D</option>
+                  <option value="autre">Autre / Sur mesure</option>
+                </select>
+              </div>
+              <div class="fg"><label>Univers / Licence</label><input type="text" id="fUnivers" placeholder="Naruto, Warhammer, OC..."></div>
+            </div>
+            <div class="fg full" style="margin-top:12px;">
+              <label>Thèmes</label>
+              <div class="cgrid">
+                <label class="ci"><input type="checkbox" value="Manga / Anime"><label>Manga / Anime</label></label>
+                <label class="ci"><input type="checkbox" value="Pop Culture"><label>Pop Culture</label></label>
+                <label class="ci"><input type="checkbox" value="Fantasy / SF"><label>Fantasy / SF</label></label>
+                <label class="ci"><input type="checkbox" value="Jeux Vidéo"><label>Jeux Vidéo</label></label>
+                <label class="ci"><input type="checkbox" value="Hentai 18+" id="hCheck" onchange="toggleAge()"><label>Hentai / 18+</label></label>
+                <label class="ci"><input type="checkbox" value="OC"><label>Personnage Original</label></label>
+                <label class="ci"><input type="checkbox" value="Dark Art"><label>Dark Art / Horreur</label></label>
+                <label class="ci"><input type="checkbox" value="Réalisme"><label>Réalisme / Portrait</label></label>
+              </div>
+              <div class="awarn" id="ageW"><span>⚠</span><div>Tu as sélectionné un contenu <strong>18+</strong>. En soumettant ce formulaire tu confirmes être <strong>majeur(e)</strong>.</div></div>
+            </div>
+          </div>
+
+          <div class="fsec">
+            <div class="fsec-t">03 — Taille</div>
+            <div class="size-hint" id="sizeHint">Sélectionne d'abord un type de produit ci-dessus</div>
+            <div id="sizeWrap">
+              <div class="fg full">
+                <label>Taille désirée <span class="req">*</span></label>
+                <select id="fSize" onchange="calcEst()" required>
+                  <option value="" disabled selected>-- Sélectionner une taille --</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="fsec">
+            <div class="fsec-t">04 — Description</div>
+            <div class="fg full"><label>Description du projet <span class="req">*</span></label>
+              <textarea id="fDesc" placeholder="Personnage, pose, accessoires, couleurs, ambiance... Plus tu es précis(e), plus le devis sera juste." required style="min-height:110px;"></textarea>
+            </div>
+            <div class="fr" style="margin-top:12px;">
+              <div class="fg"><label>Références (liens)</label><input type="text" id="fRef" placeholder="Pinterest, ArtStation, Drive..."></div>
+              <div class="fg"><label>Délai souhaité</label>
+                <select id="fDelai">
+                  <option value="" disabled selected>-- Sélectionner --</option>
+                  <option>Pas de contrainte</option>
+                  <option>Sous 1 mois</option>
+                  <option>Sous 2 mois</option>
+                  <option>Sous 3 mois</option>
+                  <option>Urgent (supplément possible)</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg full" style="margin-top:12px;"><label>Infos complémentaires</label>
+              <textarea id="fExtra" placeholder="Questions, contraintes, packaging..." style="min-height:60px;"></textarea>
+            </div>
+          </div>
+
+          <div>
+            <p class="fpol">En soumettant ce formulaire tu acceptes que tes informations soient utilisées uniquement pour ta demande. <strong>Aucune donnée n'est partagée.</strong> Pas d'engagement contractuel.</p>
+            <div class="facts">
+              <button type="submit" class="btn btn-y" id="sbtn">Envoyer Ma Demande</button>
+              <button type="reset" class="btn btn-o" onclick="resetForm()">Réinitialiser</button>
+              <span class="smsg" id="smsg">Envoi en cours…</span>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <div class="ft">
+    <div class="ft-logo"><span class="fy">SKY</span><span class="fw">WYVERN</span> <span class="fb">3D</span></div>
+    <div class="ft-mid"><div class="tag">Impression 3D Artisanale · Sur Mesure · Passion</div><div class="mail"><a href="mailto:kutkuproduction@gmail.com">kutkuproduction@gmail.com</a></div></div>
+    <div class="ft-copy">2025 SKYWYVERN 3D · Tous droits réservés</div>
+  </div>
+</footer>
+
+<script>
+var FORMSPREE_URL = 'https://formspree.io/f/mdawlyov';
+
+window.addEventListener('scroll', function(){
+  var pct = window.scrollY / (document.body.scrollHeight - window.innerHeight) * 100;
+  document.getElementById('spb').style.width = pct + '%';
+});
+
+function buildMailto(d){
+  var sub = '[SKYWYVERN 3D] Commission — ' + d.prod + ' ' + d.size + ' — ' + d.name;
+  var body =
+    'NOUVELLE COMMISSION — SKYWYVERN 3D\n' +
+    '====================================\n\n' +
+    'Nom / Pseudo : ' + d.name + '\n' +
+    'Email        : ' + d.email + '\n\n' +
+    'Produit      : ' + d.prod + '\n' +
+    'Univers      : ' + d.univers + '\n' +
+    'Themes       : ' + d.themes + '\n' +
+    'Taille       : ' + d.size + '\n\n' +
+    'Description :\n' + d.desc + '\n\n' +
+    'References   : ' + d.refs + '\n' +
+    'Delai        : ' + d.delai + '\n' +
+    'Infos +      : ' + d.extra + '\n\n' +
+    '====================================\n' +
+    'ESTIMATION   : ' + d.est + ' (indicatif)\n' +
+    '====================================';
+  return 'mailto:kutkuproduction@gmail.com?subject=' + encodeURIComponent(sub) + '&body=' + encodeURIComponent(body);
+}
+
+async function doSubmit(e){
+  e.preventDefault();
+  var btn  = document.getElementById('sbtn');
+  var smsg = document.getElementById('smsg');
+  btn.disabled = true;
+  smsg.classList.add('show');
+
+  var name    = document.getElementById('fName').value;
+  var email   = document.getElementById('fEmail').value;
+  var prodEl  = document.getElementById('fProd');
+  var prod    = prodEl.options[prodEl.selectedIndex] ? prodEl.options[prodEl.selectedIndex].text : 'Non précisé';
+  var univers = document.getElementById('fUnivers').value || 'Non précisé';
+  var sizeEl  = document.getElementById('fSize');
+  var size    = sizeEl.options[sizeEl.selectedIndex] ? sizeEl.options[sizeEl.selectedIndex].text : 'Non précisé';
+  var themes  = Array.from(document.querySelectorAll('.cgrid input:checked')).map(function(cb){ return cb.value; }).join(', ') || 'Aucun';
+  var desc    = document.getElementById('fDesc').value;
+  var refs    = document.getElementById('fRef').value || 'Aucune';
+  var delaiEl = document.getElementById('fDelai');
+  var delai   = delaiEl.options[delaiEl.selectedIndex] ? delaiEl.options[delaiEl.selectedIndex].text : 'Non précisé';
+  var extra   = document.getElementById('fExtra').value || 'Aucune';
+
+  var d = {name:name,email:email,prod:prod,univers:univers,size:size,themes:themes,desc:desc,refs:refs,delai:delai,extra:extra,est:lastEst};
+
+  // Envoi Formspree
+  try {
+    await fetch(FORMSPREE_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify({
+        _subject:'[SKYWYVERN 3D] Commission — '+prod+' '+size+' — '+name,
+        _replyto:email,
+        Nom:name,Email:email,Produit:prod,Univers:univers,
+        Themes:themes,Taille:size,Description:desc,
+        References:refs,Delai:delai,Infos:extra,
+        Estimation:lastEst+' (indicatif)'
+      })
+    });
+  } catch(err){ console.warn(err); }
+
+  smsg.classList.remove('show');
+  btn.disabled = false;
+
+  // Afficher popup
+  document.getElementById('popEst').textContent = lastEst;
+  document.getElementById('mailtoBtn').href = buildMailto(d);
+  document.getElementById('popup').classList.add('show');
+}
+</script>
+</body>
+</html>
